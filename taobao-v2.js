@@ -4,7 +4,7 @@ const { Builder, By, until } = require('selenium-webdriver');
 const userName = '淘宝登录用户名';
 const pwd = '淘宝登录密码';
 // 抢单开始时间 hh:mm:ss
-let targetTime = '20:00:00';
+let targetTime = '16:42:00';
 
 // 为抢单时间添加当天的日期，并获取时间数值
 targetTime = new Date(`${getCurDate()} ${targetTime}`).valueOf();
@@ -18,6 +18,9 @@ const waitTargetTime = 10 * 60 * 1000; // 等待目标时间不少于10min
 (async function main() {
   driver = await new Builder().forBrowser('chrome').build();
   await driver.manage().window().maximize();
+
+  const order_date = new Date(targetTime);
+  console.log("--------计划下单时间：--------"+order_date.toLocaleString())
 
   // 运行登录程序
   await login(userName, pwd);
@@ -35,23 +38,39 @@ async function firstAction() {
   await driver.wait(until.elementLocated(By.id('J_SelectAll1')), waitTime).click();
 
   // 等到购物车被全选后再进行后续程序
+
+  let quanxuan_btn_class = '.cart-checkbox';//全选按钮class 
+
   try {
-    await driver.wait(until.elementLocated(By.css('#J_SelectAll1>.cart-checkbox-checked')), waitTime);
+    await driver.wait(until.elementLocated(By.css('#J_SelectAll1>.cart-checkbox')), waitTime);
   } catch (err) {
+    console.log("---捕捉到错误---")
+    console.log(err)
     console.log('---购物车中没有能抢购的商品了。不要在意，只当是个游戏^0^---');
     return;
   }
 
+  console.log("---购物车已全选---")
+  
+  // 等待5秒（由于需要全选操作结束后等待计算按钮可用，所以需要等待5S）
+  await new Promise(resolve => setTimeout(resolve, 5000));
+
   // 查找结算按钮，点击
   let j_GoBtn = await driver.findElement(By.id('J_Go'));
 
+  console.log(j_GoBtn);
+
   // 第一次抢单等待抢单时间，时间到了才点击结算按钮
-  await driver.wait(() => {
-    return targetTime - Date.now() <= 0.5;
-  }, waitTargetTime);
+  // await driver.wait(() => {
+  //   return targetTime - Date.now() <= 0.5;
+  // }, waitTargetTime);
 
   // console.log(targetTime - Date.now());
   await j_GoBtn.click();
+
+  // await driver.wait(until.elementLocated(By.id('J_SelectAll1')), waitTime).click();
+
+  console.log('----找到结算按钮并点击了！！！-----');
 
   // 等到页面跳转到确认订单页面后再进行后续程序。但是要判断一下订单有没有在这一步就被拦截了
   await driver.wait(async () => {
@@ -98,8 +117,10 @@ async function action() {
 
   // 等到购物车被全选后再进行后续程序
   try {
-    await driver.wait(until.elementLocated(By.css('#J_SelectAll1>.cart-checkbox-checked')), waitTime);
+    await driver.wait(until.elementLocated(By.css('#J_SelectAll1>.cart-checkbox')), waitTime);
   } catch (err) {
+    console.log("---捕捉到错误---")
+    console.log(err)
     console.log('---购物车中没有能抢购的商品了。不要在意，只当是个游戏^0^---');
     return;
   }
@@ -149,11 +170,12 @@ async function login(userName, pwd) {
     // 输入用户名和密码
     await driver.findElement(By.id('fm-login-id')).sendKeys(userName);
     await driver.findElement(By.id('fm-login-password')).sendKeys(pwd);
-    await driver.findElement(By.css('.password-login')).click();
+    // await driver.findElement(By.css('.password-login')).click();  //点击登录按钮
 
-    await driver.wait(until.urlContains('https://www.taobao.com/'), waitTime);
+    // await driver.wait(until.urlContains('https://www.taobao.com/'), waitTime);
 
-    console.log('---登录成功---');
+    // console.log('---登录成功---');
+    console.log('---请扫码登录---');
   } catch (err) {
     console.log('---登录失败---');
   }
